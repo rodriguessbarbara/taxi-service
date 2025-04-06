@@ -7,21 +7,19 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api")
-class SignupController() {
+class SignupController(private val signUpService: SignUpService) {
     
-    val signUpService = SignUpService()
-
     @PostMapping("/signup")
-    fun signup(@RequestBody input: User): ResponseEntity<String> {
+    fun signup(@RequestBody input: User): ResponseEntity<Long> {
         val response = signUpService.postSignUp(input)
         
         return ResponseEntity.ok().body(input.id)
     }
 
     @GetMapping("/accounts/{accountId}")
-    fun getAccount(@PathVariable accountId: String): ResponseEntity<String> {
+    fun getAccount(@PathVariable accountId: String): ResponseEntity<Any> {
         val account = signUpService.getAccount(accountId)
 
-        return ResponseEntity.ok().body(account)
+        return account
     }
 }

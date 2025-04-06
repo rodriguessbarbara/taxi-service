@@ -1,19 +1,25 @@
 package com.taxi.service
 
-import com.taxi.ValidateCpf
+import com.taxi.exceptions.ValidationException
+import com.taxi.validators.ValidateCpf
 import com.taxi.model.User
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.server.ResponseStatusException
+import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.stereotype.Service
 import java.util.*
 
-class SignUpService() {
+@Service
+class SignUpService(private val jdbcTemplate: JdbcTemplate) {
   
   fun postSignUp(input: User) {
     val id = UUID.randomUUID().toString()
     
     val existingAccount = jdbcTemplate.queryForList("SELECT * FROM ccca.account WHERE email = ?", input.email)
-    if (existingAccount.isNotEmpty()) throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "-4")
+    if (existingAccount.isNotEmpty()) throw ValidationException("-4",
+      "uma conta já existe com esse endereço de email",
+        HttpStatus.UNPROCESSABLE_ENTITY)
     
     validaInput(input.nome, input.email, input.cpf)
     
@@ -21,20 +27,32 @@ class SignUpService() {
       input.placaCarro?.let { validaPlacaCarro(it) }
         ?: throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "-7")
     }
+    
     salvaSenha(input, id)
+    println("Conta criada com sucesso. id :: ${id}")
+    
   }
   
   private fun validaInput(nome: String, email: String, cpf: String) : Boolean {
     val validateCpf = ValidateCpf()
     
-    if (!Regex("^[A-Za-zÀ-ÖØ-öø-ÿ]+( [A-Za-zÀ-ÖØ-öø-ÿ]+)*\$").matches(nome))
-      throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "-3")
+    if (!Regex("^[A-Za-zÀ-ÖØ-öø-ÿ]+( [A-Za-zÀ-ÖØ-öø-ÿ]+)*$").matches(nome)) {
+      throw ValidationException("-3",
+        "Nome inválido. Apenas letras e espaços são permitidos.",
+        HttpStatus.UNPROCESSABLE_ENTITY)
+    }
     
-    if (!Regex("^[\\w.-]+@[a-zA-Z\\d.-]+\\.[a-zA-Z]{2,}$").matches(email))
-      throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "-2")
+    if (!Regex("^[\\w.-]+@[a-zA-Z\\d.-]+\\.[a-zA-Z]{2,}$").matches(email)) {
+      throw ValidationException("-2",
+        "E-mail inválido. Formato esperado: exemplo@dominio.com.",
+        HttpStatus.UNPROCESSABLE_ENTITY)
+    }
     
-    if (!validateCpf.validateCpf(cpf))
-      throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "-1")
+    if (!validateCpf.validateCpf(cpf)) {
+      throw ValidationException("-1",
+        "CPF inválido.",
+        HttpStatus.UNPROCESSABLE_ENTITY)
+    }
     
     return true
   }
@@ -49,15 +67,21 @@ class SignUpService() {
   }
   
   private fun salvaSenha(input: User, id: String) {
-    jdbcTemplate.update("INSERT INTO ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      id, input.nome, input.email, input.cpf, input.placaCarro, input.isPassageiro, input.isMotorista, input.senha)
+    jdbcTemplate.update("INSERT INTO ccca.account (nome, email, cpf, placa_carro, is_passageiro, is_motorista, senha)" +
+        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+      input.nome, input.email, input.cpf, input.placaCarro, input.isPassageiro, input.isMotorista, input.senha)
   }
   
-  fun getAccount(userId : String) : String {
-    val account = query("select * from ccca.account where account_id = $1", [userId]);
+  fun getAccount(userId: String): ResponseEntity<Any> {
+    val account = jdbcTemplate.queryForList(
+      "SELECT * FROM ccca.account WHERE id = ?",
+      userId.toInt()
+    )
     
     return if (account.isEmpty()) {
       ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found")
-    } else ""
+    } else {
+      ResponseEntity.ok(account)
+    }
   }
 }
