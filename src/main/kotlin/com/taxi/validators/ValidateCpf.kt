@@ -1,4 +1,4 @@
-package com.taxi
+package com.taxi.validators
 
 class ValidateCpf {
   

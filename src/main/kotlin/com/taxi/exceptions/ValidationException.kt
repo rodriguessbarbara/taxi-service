@@ -1,4 +1,9 @@
 package com.taxi.exceptions
 
-class ValidationException {
-}
+import org.springframework.http.HttpStatus
+
+class ValidationException(
+  val code: String,
+  override val message: String,
+  val status: HttpStatus
+) : RuntimeException(message)
