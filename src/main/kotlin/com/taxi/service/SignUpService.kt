@@ -1,22 +1,25 @@
 package com.taxi.service
 
 import com.taxi.exceptions.ValidationException
+import com.taxi.model.database.QueriesSQL
 import com.taxi.validators.ValidateCpf
 import com.taxi.model.User
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class SignUpService(private val jdbcTemplate: JdbcTemplate) {
+class SignUpService(
+  private val jdbcTemplate: JdbcTemplate,
+  private val queriesSQL: QueriesSQL
+) {
   
   fun postSignUp(input: User) {
     val id = UUID.randomUUID().toString()
     
-    val existingAccount = jdbcTemplate.queryForList("SELECT * FROM ccca.account WHERE email = ?", input.email)
+    val existingAccount = jdbcTemplate.queryForList(queriesSQL.findAccountByEmail, input.email)
     if (existingAccount.isNotEmpty()) throw ValidationException("-4",
       "uma conta já existe com esse endereço de email",
         HttpStatus.UNPROCESSABLE_ENTITY)
@@ -28,9 +31,8 @@ class SignUpService(private val jdbcTemplate: JdbcTemplate) {
         ?: throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "-7")
     }
     
-    salvaSenha(input, id)
-    println("Conta criada com sucesso. id :: ${id}")
-    
+    salvaConta(input)
+    println("Conta criada com sucesso. id :: $id")
   }
   
   private fun validaInput(nome: String, email: String, cpf: String) : Boolean {
@@ -66,22 +68,15 @@ class SignUpService(private val jdbcTemplate: JdbcTemplate) {
     }
   }
   
-  private fun salvaSenha(input: User, id: String) {
-    jdbcTemplate.update("INSERT INTO ccca.account (nome, email, cpf, placa_carro, is_passageiro, is_motorista, senha)" +
-        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+  private fun salvaConta(input: User) {
+    jdbcTemplate.update(queriesSQL.salvaNovaConta,
       input.nome, input.email, input.cpf, input.placaCarro, input.isPassageiro, input.isMotorista, input.senha)
   }
   
-  fun getAccount(userId: String): ResponseEntity<Any> {
-    val account = jdbcTemplate.queryForList(
-      "SELECT * FROM ccca.account WHERE id = ?",
+  fun getAccount(userId: String) : List<Map<String, Any>> {
+    return jdbcTemplate.queryForList(
+      queriesSQL.findAccountById,
       userId.toInt()
     )
-    
-    return if (account.isEmpty()) {
-      ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found")
-    } else {
-      ResponseEntity.ok(account)
-    }
   }
 }
