@@ -69,7 +69,7 @@ class SignUpService(
   }
   
   private fun salvaConta(input: User) {
-    jdbcTemplate.update(queriesSQL.salvaNovaConta,
+    jdbcTemplate.update(queriesSQL.saveNewAccount,
       input.nome, input.email, input.cpf, input.placaCarro, input.isPassageiro, input.isMotorista, input.senha)
   }
   
