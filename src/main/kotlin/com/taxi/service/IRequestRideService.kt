@@ -1,4 +1,7 @@
 package com.taxi.service
 
-interface IRequestRideService {
+import com.taxi.model.Ride
+
+fun interface IRequestRideService {
+  fun execute(input: Ride) : String
 }

@@ -6,14 +6,12 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 
 @Service
-class RequestRideServiceImpl(
+class GetRideServiceImpl(
   private val jdbcTemplate: JdbcTemplate,
   private val queriesSQL: QueriesSQL
-) : IRequestRideService {
+) : IGetRideService {
   
-  override fun execute(input: Ride): String {
-    //    salvaCorrida(input)
-    
-    return "Ride requested successfully"
+  override fun execute(rideId: String): Ride {
+    TODO("Not yet implemented")
   }
 }
