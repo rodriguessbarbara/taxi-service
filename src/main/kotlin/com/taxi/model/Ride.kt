@@ -1,10 +1,23 @@
 package com.taxi.model
 
-data class Corrida(
-    val id: String,
-    val origem: String,
-    val destino: String,
-    val motorista: User,
-    val status: String,
-    val distancia: Double? = null,
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import java.util.*
+
+data class Ride(
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long? = null,
+    val passageiroId: User?,
+    val motoristaId: User?,
+    val status: StatusRide,
+    val distancia: Double,
+    val fare: Double? = null,
+    val origemLat: Double,
+    val origemLong: Double,
+    val destinoLat: Double,
+    val destinoLong: Double,
+    val data: Date,
 )
